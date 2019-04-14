@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GridMaker : MonoBehaviour
 {
@@ -14,8 +15,8 @@ public class GridMaker : MonoBehaviour
     public static float slideLerp = -1;
     public float lerpSpeed = 0.25f;
 
-    float xOffset = WIDTH / 2f - 0.5f; //space between 
-    float yOffset = HEIGHT / 2f - 0.5f;
+    public float xOffset = WIDTH / 2f - 0.5f; //space between 
+    public float yOffset = HEIGHT / 2f - 0.5f;
 
     public GameObject[,] tiles; //2d array 
 
@@ -33,13 +34,18 @@ public class GridMaker : MonoBehaviour
     public GameObject destroyEffect; //particle prefab
     //public SpriteRenderer tileSprites;
 
-    //[HideInInspector]public bool isMatched = false;
+    public bool inDrop = false;
+    public Vector3 startDropPos;
+    public Vector3 destDropPos;
+
+    public AudioSource AudioSource;
+    public AudioClip click;
 
     // Start is called before the first frame update
     void Start()
     {
         score = 0;
-        scoreText.text = "Score:" + score;
+        scoreText.text = "" + score;
 
         tiles = new GameObject[WIDTH, HEIGHT];
 
@@ -61,8 +67,10 @@ public class GridMaker : MonoBehaviour
 
                     tiles[x, y] = player;
 
-                    Vector2 playerLocation = new Vector2(WIDTH / 2, 0);
+                    PlayerMovement playerScript = playerPrefab.GetComponent<PlayerMovement>();
+                    playerScript.SetPlayerType(Random.Range(0, playerScript.playerSprite.Length));
 
+                    Vector2 playerLocation = new Vector2(WIDTH / 2, 0);
                     //GameObject removedTile = tiles[(int)playerLocation.x, (int)playerLocation.y];
                     player.GetComponent<PlayerMovement>().playerPosition = playerLocation;
 
@@ -87,6 +95,7 @@ public class GridMaker : MonoBehaviour
             }
         }
 
+        //check if match at the beginning
         while (HasMatched())
         {
             for (int x = 0; x < WIDTH; x++)
@@ -114,7 +123,15 @@ public class GridMaker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        scoreText.text = "Score:" + score;
+        scoreText.text = "" + score;
+
+
+        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+        {
+            PlayerDropTile();
+            AudioSource.PlayOneShot(click);
+        }
+            
 
         if (slideLerp < 0 && !Repopulate() && HasMatched()){
             //Debug.Log("MATCH!");
@@ -136,6 +153,7 @@ public class GridMaker : MonoBehaviour
 
     }
 
+
     public Tiles HasMatched(){
         for (int x = 0; x < WIDTH; x++)
         {
@@ -156,6 +174,7 @@ public class GridMaker : MonoBehaviour
         return null;
     }
 
+
     public void RemoveMatches(){
         for (int x = 0; x < WIDTH; x++)
         {
@@ -171,9 +190,7 @@ public class GridMaker : MonoBehaviour
                         Instantiate(destroyEffect, tiles[x + 1, y].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x + 2, y].transform.position, Quaternion.identity);
                         Destroy(tiles[x, y]);
-
                         Destroy(tiles[x + 1, y]);
-
                         Destroy(tiles[x + 2, y]);
                         score += 3;
 
@@ -185,9 +202,7 @@ public class GridMaker : MonoBehaviour
                         Instantiate(destroyEffect, tiles[x, y + 1].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x, y + 2].transform.position, Quaternion.identity);
                         Destroy(tiles[x, y]);
-
                         Destroy(tiles[x, y + 1]);
-
                         Destroy(tiles[x, y + 2]);
                         score += 3;
 
@@ -197,200 +212,115 @@ public class GridMaker : MonoBehaviour
         }
     }
 
-    public bool Repopulate(){
-        bool repop = false;
+
+    public void PlayerDropTile(){
 
         for (int x = 0; x < WIDTH; x++)
         {
             for (int y = 0; y < HEIGHT; y++)
             {
-                //Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
-                //PlayerMovement playerScript = playerPrefab.GetComponent<PlayerMovement>();
-                if (tiles[x, y] == null)
+                PlayerMovement playerScript 
+                    = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
+
+                if (playerScript != null)
                 {
-                    repop = true;
+                    //create droppedTile
+                    GameObject droppedTile = Instantiate(tilePrefab);
+                    droppedTile.transform.parent = gridHolder.transform;
+                    droppedTile.name = "DroppedTile ( " + x + ", " + y + " )";
 
-                    if (y == 0) //if its on top
-                    {
-                        tiles[x, 0] = Instantiate(tilePrefab);
-                        Tiles tileScript = tiles[x, 0].GetComponent<Tiles>();
+                    droppedTile.transform.localPosition
+                               = GameObject.FindWithTag("Player").transform.localPosition;
 
-                        tileScript.SetType(Random.Range(0, tileScript.tokenSprites.Length));
-                        tiles[x, 0].transform.parent = gridHolder.transform;
-                        tiles[x, 0].name = "repopTile ( " + x + ", " + y + " )";
-                        tiles[x, 0].transform.localPosition
-                                   = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset);
+                    tiles[x, y] = droppedTile;
 
-                        Debug.Log("Repopulate");
-                    }
-                    else
-                    {
-                        slideLerp = 0;
-                        tiles[x, y] = tiles[x, y - 1];
-                        Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
-                        if (tileScript != null)
-                        {
-                            tileScript.SetupSlide(new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset));
-                        }
-                        PlayerMovement playerScript = tiles[x, y].GetComponent<PlayerMovement>();
-                        if(playerScript != null)
-                        {
-                            playerScript.playerPosition.Set(x, y);
-                        }
+                    //set dropped tile sprite
+                    Tiles tileScript = droppedTile.GetComponent<Tiles>();
+                    SpriteRenderer droppedTileSR = droppedTile.GetComponent<SpriteRenderer>();
+                    SpriteRenderer playerSR = GameObject.FindWithTag("Player").GetComponent<SpriteRenderer>();
+                    droppedTileSR.sprite = playerSR.sprite;
 
-                        tiles[x, y - 1] = null;
-                    }
+                    //lerp
+                    startDropPos = droppedTile.transform.localPosition;
+                    destDropPos = new Vector2(startDropPos.x, HEIGHT - y - yOffset);
+
+                    droppedTile.transform.position 
+                               = Vector2.Lerp(startDropPos, destDropPos, Time.deltaTime / lerpSpeed);
+
                 }
+
+
+
             }
         }
-        return repop;
+
+    }
+
+
+    public bool Repopulate(){
+        bool repop = false;
+
+        //for (int x = 0; x < WIDTH; x++)
+        //{
+        //    for (int y = 0; y < HEIGHT; y++)
+        //    {
+        //        //Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
+        //        //PlayerMovement playerScript = playerPrefab.GetComponent<PlayerMovement>();
+        //        if (tiles[x, y] == null)
+        //        {
+        //            repop = true;
+
+        //            if (y == 0) //if its on top
+        //            {
+        //                tiles[x, 0] = Instantiate(tilePrefab);
+        //                Tiles tileScript = tiles[x, 0].GetComponent<Tiles>();
+
+        //                tileScript.SetType(Random.Range(0, tileScript.tokenSprites.Length));
+        //                tiles[x, 0].transform.parent = gridHolder.transform;
+        //                tiles[x, 0].name = "repopTile ( " + x + ", " + y + " )";
+        //                tiles[x, 0].transform.localPosition
+        //                           = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset);
+
+        //                Debug.Log("Repopulate");
+        //            }
+        //            else
+        //            {
+        //                slideLerp = 0;
+        //                tiles[x, y] = tiles[x, y - 1];
+        //                Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
+        //                if (tileScript != null)
+        //                {
+        //                    tileScript.SetupSlide(new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset));
+        //                }
+        //                PlayerMovement playerScript = tiles[x, y].GetComponent<PlayerMovement>();
+        //                if(playerScript != null)
+        //                {
+        //                    playerScript.playerPosition.Set(x, y);
+        //                }
+
+        //                tiles[x, y - 1] = null;
+        //            }
+        //        }
+        //    }
+        //}
+        //return repop;
+        return false;
+    }
+
+
+    public void GameRestart(){
+        SceneManager.LoadScene(0);
+    }
+
+    public void GameOver(){
+        SceneManager.LoadScene(1);
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
     }
 
 
 
-
-
-
-        /*
-        public void MatchCheck()
-        {
-            isMatched = false;
-
-            for (int x = 0; x < WIDTH - 2; x++)
-            {
-                for (int y = 0; y < HEIGHT; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 1, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 2, y].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Horizontal Match 3");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x + 1, y]);
-                        Destroy(tiles[x + 2, y]);
-                        GameManager.Instance.score ++;
-                    }
-                }
-            }
-
-            for (int x = 0; x < WIDTH - 3; x++)
-            {
-                for (int y = 0; y < HEIGHT; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 1, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 2, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 3, y].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Horizontal Match 4");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x + 1, y]);
-                        Destroy(tiles[x + 2, y]);
-                        Destroy(tiles[x + 3, y]);
-                        GameManager.Instance.score++;
-                    }
-                }
-            }
-
-            for (int x = 0; x < WIDTH - 4; x++)
-            {
-                for (int y = 0; y < HEIGHT; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 1, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 2, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 3, y].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x + 4, y].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Horizontal Match 5 WOW");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x + 1, y]);
-                        Destroy(tiles[x + 2, y]);
-                        Destroy(tiles[x + 3, y]);
-                        Destroy(tiles[x + 4, y]);
-                        GameManager.Instance.score++;
-                    }
-                }
-            }
-
-            for (int x = 0; x < WIDTH; x++)
-            {
-                for (int y = 0; y < HEIGHT - 2; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 1].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 2].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Vertical Match 3");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x, y + 1]);
-                        Destroy(tiles[x, y + 2]);
-                        GameManager.Instance.score++;
-                    }
-                }
-            }
-            for (int x = 0; x < WIDTH; x++)
-            {
-                for (int y = 0; y < HEIGHT - 3; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 1].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 2].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 3].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Vertical Match 4");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x, y + 1]);
-                        Destroy(tiles[x, y + 2]);
-                        Destroy(tiles[x, y + 3]);
-                        GameManager.Instance.score++;
-                    }
-                }
-            }
-            for (int x = 0; x < WIDTH; x++)
-            {
-                for (int y = 0; y < HEIGHT - 4; y++)
-                {
-                    if (tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 1].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 2].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 3].GetComponent<SpriteRenderer>().sprite
-                       && tiles[x, y].GetComponent<SpriteRenderer>().sprite
-                            == tiles[x, y + 4].GetComponent<SpriteRenderer>().sprite)
-                    {
-                        Debug.Log("Vertical Match 5");
-                        isMatched = true;
-
-                        Destroy(tiles[x, y]);
-                        Destroy(tiles[x, y + 1]);
-                        Destroy(tiles[x, y + 2]);
-                        Destroy(tiles[x, y + 3]);
-                        Destroy(tiles[x, y + 4]);
-                        GameManager.Instance.score++;
-                    }
-                }
-            }
-        }
-        */
-    }
+}

@@ -112,7 +112,7 @@ MonoBehaviour:
       m_Calls: []
     m_TypeName: UnityEngine.UI.MaskableGraphic+CullStateChangedEvent, UnityEngine.UI,
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-  m_text: 6
+  m_text: P
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4b69858e468844e8ba8046581bc31f11, type: 2}
   m_sharedMaterial: {fileID: 21974129653253824, guid: 4b69858e468844e8ba8046581bc31f11,
@@ -222,7 +222,7 @@ GameObject:
   - component: {fileID: 9021272289851053195}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -284,7 +284,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: ab49a745af0bb467293b07a8bad31762, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d34e92b5c6cb54d64917a9bdc0d8ec68, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -310,8 +310,14 @@ MonoBehaviour:
   playerPosition: {x: 0, y: 0}
   gridMaker: {fileID: 0}
   tileScript: {fileID: 0}
-  moveCount: 6
-  moveCountText: {fileID: 9021272289258316000}
+  playerType: 2
+  playerSprite:
+  - {fileID: 21300000, guid: 65eaa197437ca434b89c4d5ebd281af3, type: 3}
+  - {fileID: 21300000, guid: 36b78a65d15194b23953c0bc7d48d663, type: 3}
+  - {fileID: 21300000, guid: d34e92b5c6cb54d64917a9bdc0d8ec68, type: 3}
+  - {fileID: 21300000, guid: 5e523ddbf1ff04bf0b72ab3c86c6ab0d, type: 3}
+  x: 0
+  y: 0
 --- !u!114 &9021272289851053195
 MonoBehaviour:
   m_ObjectHideFlags: 0
