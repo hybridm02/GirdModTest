@@ -18,28 +18,38 @@ public class GridMaker : MonoBehaviour
     public float xOffset = WIDTH / 2f - 0.5f; //space between 
     public float yOffset = HEIGHT / 2f - 0.5f;
 
+    GameObject gridHolder; 
+
     public GameObject[,] tiles; //2d array 
-
     public GameObject tilePrefab;
-
-    //public Tiles tileScript;
-
-    GameObject gridHolder; //like a folder
-
     public GameObject playerPrefab;
 
     public bool isMatch = false;
     public bool stopTile;
 
     public GameObject destroyEffect; //particle prefab
-    //public SpriteRenderer tileSprites;
 
     public bool inDrop = false;
-    public Vector3 startDropPos;
-    public Vector3 destDropPos;
+    //public Vector3 startDropPos;
+    //public Vector3 destDropPos;
+
+    public GameObject emptyPrefab;
+
+    GameObject droppedTile;
+    Vector2 newDropTilePos;
+
+    Vector2 oldPlayerPos;
 
     public AudioSource AudioSource;
-    public AudioClip click;
+    [Header("AUDIO CLIPS")]
+    public AudioClip arrowDown;
+    public AudioClip arrowUp;
+    public AudioClip dropTile;
+    public AudioClip destroyTile;
+    public AudioClip buttonClick;
+    public AudioClip alarm;
+
+
 
     // Start is called before the first frame update
     void Start()
@@ -51,7 +61,7 @@ public class GridMaker : MonoBehaviour
 
         gridHolder = new GameObject();
         gridHolder.transform.position = new Vector3(-1f, -1f, 0);
-
+       
         for (int x = 0; x < WIDTH; x++)
         {
             for (int y = 0; y < HEIGHT; y++)
@@ -61,9 +71,8 @@ public class GridMaker : MonoBehaviour
                     GameObject player = Instantiate(playerPrefab);
                     player.transform.parent = gridHolder.transform;
                     player.name = "PLAYER ( " + x + ", " + y + " )";
-                    player.transform.localPosition
-                          //= new Vector2(WIDTH - x - xOffset, 0);
-                    = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset);
+                    player.transform.localPosition = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset);
+                    //= new Vector2(WIDTH - x - xOffset, 0);
 
                     tiles[x, y] = player;
 
@@ -71,7 +80,9 @@ public class GridMaker : MonoBehaviour
                     playerScript.SetPlayerType(Random.Range(0, playerScript.playerSprite.Length));
 
                     Vector2 playerLocation = new Vector2(WIDTH / 2, 0);
+                    //Vector2 playerLocation = new Vector2(-1, 0); // goes down to the correct pos
                     //GameObject removedTile = tiles[(int)playerLocation.x, (int)playerLocation.y];
+
                     player.GetComponent<PlayerMovement>().playerPosition = playerLocation;
 
                     //Destroy(removedTile);
@@ -91,6 +102,17 @@ public class GridMaker : MonoBehaviour
                     Tiles tileScript = newTile.GetComponent<Tiles>();
                     //tileScript.SetSprite(Random.Range(0, tileScript.tileSprites.Length));
                     tileScript.SetType(Random.Range(0, tileScript.tokenSprites.Length));
+                }
+                else if (x >= 0 && x <= WIDTH && y < 5 && y <= HEIGHT)
+                {
+                    //Instantiate(gameObject);
+                    GameObject emptySpot = Instantiate(emptyPrefab);
+                    emptySpot.transform.parent = gridHolder.transform;
+                    emptySpot.name = "EMPTY ( " + x + ", " + y + " )";
+                    emptySpot.transform.localPosition
+                           = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset);
+
+                    tiles[x, y] = emptySpot;
                 }
             }
         }
@@ -123,13 +145,44 @@ public class GridMaker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        PlayerMovement playerScript = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
         scoreText.text = "" + score;
 
-
-        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+        //check if has GameObject emptySpot
+        //if null, generate one
+        for (int x = 0; x < WIDTH; x++)
         {
-            PlayerDropTile();
-            AudioSource.PlayOneShot(click);
+            for (int y = 0; y < HEIGHT; y++)
+            {
+                if(tiles[x, y] == null)
+                {
+                    GameObject emptySpot = Instantiate(emptyPrefab);
+                    emptySpot.transform.parent = gridHolder.transform;
+                    emptySpot.name = "EMPTY ( " + x + ", " + y + " )";
+                    emptySpot.transform.localPosition 
+                             = new Vector2(WIDTH - x - xOffset, HEIGHT - y - yOffset); 
+
+                    tiles[x, y] = emptySpot;
+
+                    Debug.Log("empty tile Instantiated at ( " + x + ", " + y + " )");
+                } 
+                else if (tiles[x, y].CompareTag("Tile") == true && tiles[x, y].CompareTag("Empty") == true)
+                {
+                    Destroy(GameObject.FindWithTag("Empty"));
+
+                    Debug.Log("empty destroyed at (" + x + ", " + y + " )");
+                }
+            }
+        }
+
+        if (Input.GetKeyUp(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+        {
+
+            PlayerDropDropTile();
+            AudioSource.PlayOneShot(dropTile);
+            oldPlayerPos = playerScript.playerPosition;
+
+            playerScript.SetPlayerType(Random.Range(0, playerScript.playerSprite.Length));
         }
             
 
@@ -151,8 +204,21 @@ public class GridMaker : MonoBehaviour
             stopTile = false;
         }
 
+
+
+        // LERPING !!!! LOL DOESN'T WORK YET
+        /*
+        startDropPos = droppedTile.transform.localPosition;
+        destDropPos = newDropTilePos;
+
+        droppedTile.transform.localPosition = Vector2.Lerp(startDropPos, destDropPos, Time.deltaTime / lerpSpeed);
+        */
     }
 
+    public void CheckEmptySpot()
+    {
+
+    }
 
     public Tiles HasMatched(){
         for (int x = 0; x < WIDTH; x++)
@@ -161,7 +227,7 @@ public class GridMaker : MonoBehaviour
             {
                 Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
 
-                if(tileScript != null){
+                if(tileScript != null && !tileScript.isEmptyTile){
                     if(x < WIDTH - 2 && tileScript.isMatch(tiles[x + 1, y], tiles[x + 2, y])){
                         return tileScript;
                     }
@@ -182,17 +248,20 @@ public class GridMaker : MonoBehaviour
             {
                 Tiles tileScript = tiles[x, y].GetComponent<Tiles>();
 
-                if (tileScript != null){
+                if (tileScript != null && !tileScript.isEmptyTile){
                     if (x < WIDTH - 2 && tileScript.isMatch(tiles[x + 1, y], tiles[x + 2, y]))
                     {
                         //particles 
                         Instantiate(destroyEffect, tiles[x, y].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x + 1, y].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x + 2, y].transform.position, Quaternion.identity);
+                       
                         Destroy(tiles[x, y]);
                         Destroy(tiles[x + 1, y]);
                         Destroy(tiles[x + 2, y]);
+                        AudioSource.PlayOneShot(destroyTile);
                         score += 3;
+
 
                     }
                     if (y < HEIGHT - 2 && tileScript.isMatch(tiles[x, y + 1], tiles[x, y + 2]))
@@ -201,9 +270,11 @@ public class GridMaker : MonoBehaviour
                         Instantiate(destroyEffect, tiles[x, y].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x, y + 1].transform.position, Quaternion.identity);
                         Instantiate(destroyEffect, tiles[x, y + 2].transform.position, Quaternion.identity);
+                       
                         Destroy(tiles[x, y]);
                         Destroy(tiles[x, y + 1]);
                         Destroy(tiles[x, y + 2]);
+                        AudioSource.PlayOneShot(destroyTile);
                         score += 3;
 
                     }
@@ -213,43 +284,93 @@ public class GridMaker : MonoBehaviour
     }
 
 
-    public void PlayerDropTile(){
+    //public void PlayerCreateDropTile(){
+        //GameObject droppedTile = Instantiate(tilePrefab);
 
-        for (int x = 0; x < WIDTH; x++)
-        {
-            for (int y = 0; y < HEIGHT; y++)
-            {
-                PlayerMovement playerScript 
-                    = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
+        //for (int x = 0; x < WIDTH; x++)
+        //{
+            //for (int y = 0; y < HEIGHT; y++)
+            //{
+                //PlayerMovement playerScript 
+                //    = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
 
-                if (playerScript != null)
-                {
-                    //create droppedTile
-                    GameObject droppedTile = Instantiate(tilePrefab);
-                    droppedTile.transform.parent = gridHolder.transform;
-                    droppedTile.name = "DroppedTile ( " + x + ", " + y + " )";
+                //if (playerScript != null)
+                //{
+                    ////create droppedTile
 
-                    droppedTile.transform.localPosition
-                               = GameObject.FindWithTag("Player").transform.localPosition;
+                    //droppedTile.transform.parent = gridHolder.transform;
+                    //droppedTile.name = "DroppedTile ( " + x + ", " + y + " )";
 
-                    tiles[x, y] = droppedTile;
+                    //droppedTile.transform.localPosition
+                    //           = GameObject.FindWithTag("Player").transform.localPosition;
 
-                    //set dropped tile sprite
-                    Tiles tileScript = droppedTile.GetComponent<Tiles>();
-                    SpriteRenderer droppedTileSR = droppedTile.GetComponent<SpriteRenderer>();
-                    SpriteRenderer playerSR = GameObject.FindWithTag("Player").GetComponent<SpriteRenderer>();
-                    droppedTileSR.sprite = playerSR.sprite;
 
+                    //tiles[x, y] = droppedTile;
+
+                    ////set dropped tile sprite
+                    //Tiles tileScript = droppedTile.GetComponent<Tiles>();
+                    //SpriteRenderer droppedTileSR = droppedTile.GetComponent<SpriteRenderer>();
+                    //SpriteRenderer playerSR = GameObject.FindWithTag("Player").GetComponent<SpriteRenderer>();
+                    //droppedTileSR.sprite = playerSR.sprite;
+
+                    //playerScript.playerPosition
+
+
+
+                    // GameObject lastTileInY = tiles[(int)droppedTile.transform.localPosition.x, ]
+
+                    //Debug.Log();
                     //lerp
-                    startDropPos = droppedTile.transform.localPosition;
-                    destDropPos = new Vector2(startDropPos.x, HEIGHT - y - yOffset);
+                    //startDropPos = droppedTile.transform.localPosition;
+                    //destDropPos = new Vector2(startDropPos.x, HEIGHT - y - yOffset);
 
-                    droppedTile.transform.position 
-                               = Vector2.Lerp(startDropPos, destDropPos, Time.deltaTime / lerpSpeed);
+                    //droppedTile.transform.localPosition 
+                               //= Vector2.Lerp(startDropPos, destDropPos, Time.deltaTime / lerpSpeed);
 
-                }
+    //            }
 
 
+
+    //        }
+    //    }
+
+    //    // set drop tile to new location 
+
+    //}
+
+    public void PlayerDropDropTile()
+    {
+
+        bool onlyOnce = true;
+
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            PlayerMovement playerScript
+                    = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
+            if( onlyOnce == true && tiles[(int)playerScript.playerPosition.x, y].CompareTag("Tile") == true) {
+                int newY = y - 1;
+                //Debug.Log(tiles[(int)playerScript.playerPosition.x, newY]);
+
+                newDropTilePos = new Vector2(tiles[(int)playerScript.playerPosition.x, newY].transform.localPosition.x,
+                                                     tiles[(int)playerScript.playerPosition.x, newY].transform.localPosition.y);
+
+                onlyOnce = false;
+
+                // GameObject droppedTile = Instantiate(tilePrefab);
+                droppedTile = Instantiate(tilePrefab);
+
+                droppedTile.transform.parent = gridHolder.transform;
+                droppedTile.name = "DroppedTile ( " + playerScript.playerPosition.x + ", " + newY + " )";
+
+                // we set the tile's new position here!!!
+                droppedTile.transform.localPosition = newDropTilePos;
+
+                Tiles tileScript = droppedTile.GetComponent<Tiles>();
+                SpriteRenderer droppedTileSR = droppedTile.GetComponent<SpriteRenderer>();
+                SpriteRenderer playerSR = GameObject.FindWithTag("Player").GetComponent<SpriteRenderer>();
+                droppedTileSR.sprite = playerSR.sprite;
+
+                tiles[(int)playerScript.playerPosition.x, newY] = droppedTile;
 
             }
         }
@@ -258,7 +379,7 @@ public class GridMaker : MonoBehaviour
 
 
     public bool Repopulate(){
-        bool repop = false;
+        //bool repop = false;
 
         //for (int x = 0; x < WIDTH; x++)
         //{

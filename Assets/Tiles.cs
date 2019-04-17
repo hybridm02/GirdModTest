@@ -14,6 +14,7 @@ public class Tiles : MonoBehaviour
     public bool inSlide = false;
     public bool match = false;
 
+    public bool isEmptyTile = false;
     //public GridMaker gridMaker;
     void Start()
     {

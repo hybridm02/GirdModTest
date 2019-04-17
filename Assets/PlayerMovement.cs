@@ -13,14 +13,10 @@ public class PlayerMovement : MonoBehaviour
     public int playerType;
     public Sprite[] playerSprite;
 
-    public int x;
-    public int y;
-
 
     // Start is called before the first frame update
     void Start()
     {
-        gridMaker = GameObject.Find("GridMaker").GetComponent<GridMaker>();
         //tileScript = GameObject.Find("Tile").GetComponent<Tiles>();
 
 
@@ -29,55 +25,29 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        for (int x = 0; x < GridMaker.WIDTH; x++)
+        gridMaker = GameObject.Find("GridMaker").GetComponent<GridMaker>();
+
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) && !gridMaker.stopTile)
         {
-            for (int y = 0; y < GridMaker.HEIGHT; y++)
-            {
-                if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)
-                   && !gridMaker.stopTile)
-                {
-                    transform.position = new Vector2(playerPosition.x + 1, playerPosition.y);
-                    gridMaker.AudioSource.PlayOneShot(gridMaker.click);
-
-                }
-                if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)
-                   && !gridMaker.stopTile)
-                {
-                    transform.position = new Vector2(playerPosition.x - 1, playerPosition.y);
-                    gridMaker.AudioSource.PlayOneShot(gridMaker.click);
-                }
-
-            }
+            gridMaker.AudioSource.PlayOneShot(gridMaker.arrowDown);
+        }
+        if (Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.A) && !gridMaker.stopTile)
+        {
+            Swap(1, 0);
+            gridMaker.AudioSource.PlayOneShot(gridMaker.arrowUp);
         }
 
 
-
-
-        //if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) && !gridMaker.stopTile)
-        //{
-        //    Swap(1, 0);
-        //    if (gridMaker.HasMatched())
-        //    {
-        //        //moveCount = 6;
-        //    }
-        //    else
-        //    {
-        //        //moveCount--;
-        //    }
-        //}
-
-        //if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) && !gridMaker.stopTile)
-        //{
-        //    Swap(-1, 0);
-        //    if (gridMaker.HasMatched())
-        //    {
-        //        //moveCount = 6;
-        //    }
-        //    else
-        //    {
-        //        //moveCount--;
-        //    }
-        //}
+        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D) && !gridMaker.stopTile)
+        {
+            gridMaker.AudioSource.PlayOneShot(gridMaker.arrowDown);
+        }
+        if (Input.GetKeyUp(KeyCode.RightArrow) || Input.GetKeyUp(KeyCode.D) && !gridMaker.stopTile)
+        {
+            Swap(-1, 0);
+            gridMaker.AudioSource.PlayOneShot(gridMaker.arrowUp);
+        }
 
 
     }
@@ -89,26 +59,31 @@ public class PlayerMovement : MonoBehaviour
     }
 
 
-    //void Swap (int x, int y){
+    void Swap (int x, int y){
 
-    //    Vector2 oldLocation = new Vector2(playerPosition.x, playerPosition.y);
-    //    Vector2 newLocation = new Vector2(playerPosition.x + x, playerPosition.y); 
+        Vector2 oldLocation = new Vector2(playerPosition.x, playerPosition.y);
+        Vector2 newLocation = new Vector2(playerPosition.x + x, playerPosition.y + y); 
 
-    //    if (newLocation.x < GridMaker.WIDTH && newLocation.x >= 0){
-    //        //&& newLocation.y < GridMaker.HEIGHT && newLocation.y >= 0){
+        if (newLocation.x < GridMaker.WIDTH && newLocation.x >= 0
+            && newLocation.y < GridMaker.HEIGHT && newLocation.y >= 0){
 
-    //        GameObject swappedTile = gridMaker.tiles[(int)newLocation.x, (int)newLocation.y];
-    //        Vector2 swapPosition = swappedTile.transform.localPosition;
+            GameObject swappedTile = gridMaker.tiles[(int)newLocation.x, (int)newLocation.y];
+            Vector2 swapPosition = swappedTile.transform.localPosition;
 
-    //        swappedTile.transform.position = transform.position;
-    //        transform.localPosition = swapPosition;
+            swappedTile.transform.localPosition = transform.localPosition;
+            transform.localPosition = swapPosition;
 
-    //        gridMaker.tiles[(int)oldLocation.x, (int)oldLocation.y] = swappedTile;
-    //        gridMaker.tiles[(int)newLocation.x, (int)newLocation.y] = gameObject;
+            gridMaker.tiles[(int)oldLocation.x, (int)oldLocation.y] = swappedTile;
+            gridMaker.tiles[(int)newLocation.x, (int)newLocation.y] = gameObject;
 
-    //        playerPosition = newLocation;
-    //    }
-    //}
+
+            playerPosition = newLocation;
+
+
+            //Debug.Log("PLAYER IN 2D ARRAY POSITION X = " + (int)newLocation.x + " Y = "+ (int)newLocation.y);
+            //Debug.Log(playerPosition);
+        }
+    }
 
 
 }
