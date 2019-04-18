@@ -180,6 +180,7 @@ public class GridMaker : MonoBehaviour
             }
         }
 
+
         if (Input.GetKeyUp(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
         {
 
@@ -220,10 +221,10 @@ public class GridMaker : MonoBehaviour
         */
     }
 
-    public void CheckEmptySpot()
-    {
+    //public void CheckEmptySpot()
+    //{
 
-    }
+    //}
 
     public Tiles HasMatched(){
         for (int x = 0; x < WIDTH; x++)
