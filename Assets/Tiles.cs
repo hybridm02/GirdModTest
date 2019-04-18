@@ -51,7 +51,10 @@ public class Tiles : MonoBehaviour
     {
         Tiles ts1 = gameObject1.GetComponent<Tiles>();
         Tiles ts2 = gameObject2.GetComponent<Tiles>();
-        return ts1 != null && ts2 != null && type == ts1.type && type == ts2.type;
+        return ts1 != null && ts2 != null 
+            && type == ts1.type && type == ts2.type 
+            && ts1.CompareTag("Tile") == true 
+            && ts2.CompareTag("Tile") == true;
 
 
     }

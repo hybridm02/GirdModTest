@@ -35,6 +35,7 @@ public class GridMaker : MonoBehaviour
 
     public GameObject emptyPrefab;
 
+    //GameObject nextTile;
     GameObject droppedTile;
     Vector2 newDropTilePos;
 
@@ -140,6 +141,9 @@ public class GridMaker : MonoBehaviour
                 }
             }
         }
+
+        //Vector2 nextTilePosition = new Vector2(6.0f, 3.0f);
+        //nextTile = Instantiate(tilePrefab, nextTilePosition, Quaternion.identity);
     }
 
     // Update is called once per frame
@@ -148,13 +152,14 @@ public class GridMaker : MonoBehaviour
         PlayerMovement playerScript = GameObject.FindWithTag("Player").GetComponent<PlayerMovement>();
         scoreText.text = "" + score;
 
+
         //check if has GameObject emptySpot
         //if null, generate one
         for (int x = 0; x < WIDTH; x++)
         {
             for (int y = 0; y < HEIGHT; y++)
             {
-                if(tiles[x, y] == null)
+                if (tiles[x, y] == null)
                 {
                     GameObject emptySpot = Instantiate(emptyPrefab);
                     emptySpot.transform.parent = gridHolder.transform;
@@ -165,7 +170,7 @@ public class GridMaker : MonoBehaviour
                     tiles[x, y] = emptySpot;
 
                     Debug.Log("empty tile Instantiated at ( " + x + ", " + y + " )");
-                } 
+                }
                 else if (tiles[x, y].CompareTag("Tile") == true && tiles[x, y].CompareTag("Empty") == true)
                 {
                     Destroy(GameObject.FindWithTag("Empty"));

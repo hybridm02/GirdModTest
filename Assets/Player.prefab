@@ -279,7 +279,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 5e523ddbf1ff04bf0b72ab3c86c6ab0d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d34e92b5c6cb54d64917a9bdc0d8ec68, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -305,7 +305,7 @@ MonoBehaviour:
   playerPosition: {x: 0, y: 0}
   gridMaker: {fileID: 0}
   tileScript: {fileID: 0}
-  playerType: 3
+  playerType: 2
   playerSprite:
   - {fileID: 21300000, guid: 65eaa197437ca434b89c4d5ebd281af3, type: 3}
   - {fileID: 21300000, guid: 36b78a65d15194b23953c0bc7d48d663, type: 3}
